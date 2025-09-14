@@ -1,0 +1,82 @@
+import os
+import cv2
+import numpy as np
+
+# Define the base directory of the dataset
+dataset_base_dir = '/content/drive/MyDrive/Crop Diseases Dataset/Crop Diseases/Crop___Disease' # Replace with the actual path to your dataset
+
+# Check if the dataset directory exists
+if not os.path.exists(dataset_base_dir):
+    print(f"Error: Dataset directory not found at {dataset_base_dir}")
+    print("Please make sure the path is correct and the dataset is uploaded to your Google Drive.")
+    # Since the directory doesn't exist, I cannot proceed with loading.
+    # I will finish the task with failure and indicate that the dataset was not loaded.
+
+else:
+    # Define the categories (folders) within the dataset - these are the plant types in this dataset structure
+    plant_categories = os.listdir(dataset_base_dir)
+    plant_categories.sort() # Ensure consistent order
+
+    # Initialize lists to store image data and labels
+    images = []
+    labels = []
+    category_names = [] # To store the actual disease names as categories
+
+    print(f"Found plant categories: {plant_categories}")
+
+    # Loop through each plant category
+    for plant_category in plant_categories:
+        plant_path = os.path.join(dataset_base_dir, plant_category)
+
+        # Check if it's a directory
+        if os.path.isdir(plant_path):
+            # Loop through disease categories within each plant category
+            disease_categories = os.listdir(plant_path)
+            disease_categories.sort() # Ensure consistent order
+
+            print(f"Found disease categories in {plant_category}: {disease_categories}")
+
+            for disease_category in disease_categories:
+                disease_path = os.path.join(plant_path, disease_category)
+
+                # Check if it's a directory
+                if os.path.isdir(disease_path):
+                    # Assign a numerical label to each unique disease category
+                    if disease_category not in category_names:
+                        category_names.append(disease_category)
+                    class_num = category_names.index(disease_category)
+
+                    # Loop through each image in the disease directory
+                    for img in os.listdir(disease_path):
+                        img_path = os.path.join(disease_path, img)
+                        # Check if it's a file
+                        if os.path.isfile(img_path):
+                            try:
+                                img_array = cv2.imread(img_path)
+                                # You might want to resize the images to a consistent size
+                                # img_array = cv2.resize(img_array, (image_width, image_height))
+                                if img_array is not None:
+                                    images.append(img_array)
+                                    labels.append(class_num)
+                                else:
+                                    print(f"Warning: Could not load image {img_path}")
+                            except Exception as e:
+                                print(f"Error loading image {img_path}: {e}")
+                        else:
+                             print(f"Skipping non-file in {disease_path}: {img}")
+                else:
+                     print(f"Skipping non-directory in {plant_path}: {disease_category}")
+        else:
+            print(f"Skipping non-directory in {dataset_base_dir}: {plant_category}")
+
+
+    # Convert the lists to numpy arrays only if images were loaded successfully
+    if images:
+      images = np.array(images)
+      labels = np.array(labels)
+      print(f"Loaded {len(images)} images with {len(labels)} labels.")
+      print(f"Identified categories: {category_names}")
+      print(f"Number of classes: {len(category_names)}")
+
+    else:
+        print("No images were loaded due to errors.")
