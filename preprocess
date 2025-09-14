@@ -1,0 +1,29 @@
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.utils import to_categorical
+
+# Define image size
+IMG_WIDTH = 128
+IMG_HEIGHT = 128
+
+# Resize images
+resized_images = []
+for img in images:
+    resized_img = cv2.resize(img, (IMG_WIDTH, IMG_HEIGHT))
+    resized_images.append(resized_img)
+
+resized_images = np.array(resized_images)
+
+# Normalize pixel values to be between 0 and 1
+normalized_images = resized_images / 255.0
+
+# Convert labels to one-hot encoding
+num_classes = len(category_names) # Use len(category_names) as num_classes
+one_hot_labels = to_categorical(labels, num_classes=num_classes)
+
+# Split data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(normalized_images, one_hot_labels, test_size=0.2, random_state=42)
+
+print(f"Training data shape: {X_train.shape}")
+print(f"Testing data shape: {X_test.shape}")
+print(f"Training labels shape: {y_train.shape}")
+print(f"Testing labels shape: {y_test.shape}")
