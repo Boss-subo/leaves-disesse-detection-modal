@@ -1,0 +1,80 @@
+import os
+import tensorflow as tf
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Define the path to save the model
+model_save_path = '/content/drive/MyDrive/leaf_disease_model' # You can change the folder name
+
+# Export the model in the SavedModel format
+model.export(model_save_path)
+
+print(f"Model exported successfully to {model_save_path}")
+
+# --- To test with a new image ---
+
+# 1. Define the path to a new image
+# Replace 'path/to/your/new_image.jpg' with the actual path to an image you want to test
+# For demonstration, let's assume you have an image in your Drive
+new_image_path = '/content/drive/MyDrive/Crop Diseases Dataset/Crop Diseases/Crop___Disease/Corn/Corn___Common_Rust/image (1).JPG' # Example path - CHANGE THIS
+
+# Check if the image file exists
+if not os.path.exists(new_image_path):
+    print(f"Error: New image not found at {new_image_path}")
+    print("Please replace the path with the actual path to your test image.")
+else:
+    # 2. Load and preprocess the new image
+    # Make sure the preprocessing steps match what was done for the training data
+    IMG_WIDTH = 128
+    IMG_HEIGHT = 128
+
+    try:
+        img = cv2.imread(new_image_path)
+        if img is not None:
+            # Display the test image
+            img_to_display_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            plt.imshow(img_to_display_rgb)
+            plt.title("Image used for testing")
+            plt.axis('off') # Hide axes
+            plt.show()
+
+            # Resize the image
+            img = cv2.resize(img, (IMG_WIDTH, IMG_HEIGHT))
+            # Normalize pixel values
+            img = img / 255.0
+            # Expand dimensions to match the model's input shape (add batch dimension)
+            img = np.expand_dims(img, axis=0)
+
+            # 3. Make a prediction using the exported model
+            # Load the exported model for testing
+            loaded_model = tf.saved_model.load(model_save_path)
+            infer = loaded_model.signatures["serving_default"]
+            predictions = infer(tf.constant(img, dtype=tf.float32))
+
+            # The output is a dictionary, get the output tensor
+            output_tensor_name = list(predictions.keys())[0] # Get the first output tensor name
+            output_probabilities = predictions[output_tensor_name].numpy()
+
+
+            # 4. Interpret the prediction
+            predicted_class_index = np.argmax(output_probabilities)
+
+            # This relies on the 'category_names' variable from the data loading cell
+            try:
+                predicted_category = category_names[predicted_class_index]
+                print(f"The predicted class index is: {predicted_class_index}")
+                print(f"The predicted disease is: {predicted_category}")
+                print(f"Prediction probabilities: {output_probabilities}")
+            except NameError:
+                print("Error: 'category_names' variable not found.")
+                print("Please make sure the cell that loads the data and defines 'category_names' was executed.")
+                print(f"Predicted class index: {predicted_class_index}")
+                print(f"Prediction probabilities: {output_probabilities}")
+
+
+        else:
+            print(f"Error: Could not load the image from {new_image_path}. Check the file integrity.")
+    except Exception as e:
+        print(f"An error occurred during image processing or prediction: {e}")
+
